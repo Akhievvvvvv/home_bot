@@ -1,4 +1,4 @@
-# Chat Save Bot
+# @home_vpn_bot_bot
 
 Телеграм-бот для продажи VPN подписок через ⭐️Stars.
 
@@ -20,5 +20,5 @@
 
 1. Клонируем репозиторий:
 ```bash
-git clone https://github.com/<твой_логин>/home-bot.git
-cd home-bot
+git clone https://github.com/<твой_логин>/home-vpn-bot.git
+cd home-vpn-bot
