@@ -9,4 +9,4 @@ DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "ru")
 
 VPN_IPV4 = os.getenv("VPN_IPV4")
 VPN_IPV6 = os.getenv("VPN_IPV6")
-VPN_API_KEY = os.getenv("VPN_API_KEY")
+PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN")
