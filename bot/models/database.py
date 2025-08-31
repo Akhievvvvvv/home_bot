@@ -27,7 +27,7 @@ class Subscription(Base):
     start_date = Column(DateTime, default=datetime.datetime.utcnow)
     end_date = Column(DateTime)
 
-# Заглушка VPNKey, чтобы импорт работал
+# Модель VPN ключа
 class VPNKey(Base):
     __tablename__ = "vpn_keys"
     id = Column(Integer, primary_key=True, index=True)
@@ -36,7 +36,7 @@ class VPNKey(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     expires_at = Column(DateTime, nullable=True)
 
-# Создаём все таблицы
+# Создание всех таблиц
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)
     print("База данных и таблицы созданы успешно!")
