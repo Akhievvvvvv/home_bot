@@ -1,28 +1,7 @@
-# Работа с Telegram Bot API
 python-telegram-bot==20.6
-
-# Работа с HTTP-запросами (Outline API)
 requests==2.31.0
-
-# Работа с базой данных
-SQLAlchemy==2.0.20
-databases==0.7.2
-
-# Работа с .env файлами
-python-dotenv==1.0.1
-
-# Асинхронность (если используем async handlers)
-aiohttp==3.9.4
-
-# Для генерации QR-кодов VPN
-qrcode==7.4.2
-Pillow==10.0.0
-
-# Для работы с JSON и сериализацией
-ujson==5.8.0
-
-# Логирование и обработка ошибок
-loguru==0.7.0
-
-# Обновление бота через Docker / Outline
-docker==6.1.3
+SQLAlchemy==1.4.46
+databases==0.8.0
+aiohttp==3.8.5
+PyYAML==6.0
+cryptography==41.0.3
