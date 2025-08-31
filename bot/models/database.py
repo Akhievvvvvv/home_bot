@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import datetime
 
-# База и сессия
+# База данных
 Base = declarative_base()
 engine = create_engine("sqlite:///vpn_bot.db", connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
@@ -13,7 +13,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     telegram_id = Column(Integer, unique=True)
-    username = Column(String, nullable=True)
+    username = Column(String)
     referral_code = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -21,26 +21,25 @@ class User(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer)  # ID пользователя
+    user_id = Column(Integer)
     plan_months = Column(Integer)
     paid_stars = Column(Integer)
     start_date = Column(DateTime, default=datetime.datetime.utcnow)
-    end_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime)
 
-# Модель VPN ключа
+# Модель VPN-ключа
 class VPNKey(Base):
     __tablename__ = "vpn_keys"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer)  # ID пользователя, которому выдан ключ
-    key = Column(String, unique=True, index=True)  # сам VPN ключ
-    active = Column(Integer, default=1)  # 1 — активен, 0 — не активен
+    user_id = Column(Integer)
+    key = Column(String, unique=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    expires_at = Column(DateTime, nullable=True)  # дата окончания действия ключа
+    expires_at = Column(DateTime)
 
-# Создание таблиц
+# Создание всех таблиц
 def init_db():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
     init_db()
-    print("База данных и таблицы успешно созданы!")
+    print("База данных и таблицы созданы!")
