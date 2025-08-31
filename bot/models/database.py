@@ -3,12 +3,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import datetime
 
-# Создание базы
 Base = declarative_base()
-engine = create_engine("sqlite:///vpn_bot.db", echo=False)  # echo=True для логов SQL
+engine = create_engine("sqlite:///vpn_bot.db", connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 
-# Модель пользователя
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -17,7 +15,6 @@ class User(Base):
     referral_code = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-# Модель подписки
 class Subscription(Base):
     __tablename__ = "subscriptions"
     id = Column(Integer, primary_key=True, index=True)
@@ -27,11 +24,15 @@ class Subscription(Base):
     start_date = Column(DateTime, default=datetime.datetime.utcnow)
     end_date = Column(DateTime)
 
-# Модель VPN ключа
 class VPNKey(Base):
     __tablename__ = "vpn_keys"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer)
     key = Column(String, unique=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    expires_at = Column(DateTime)
+    expires_at = Column(DateTime, nullable=True)
+
+# Создание таблиц в базе
+if __name__ == "__main__":
+    Base.metadata.create_all(bind=engine)
+    print("Таблицы базы данных созданы!")
