@@ -1,24 +1,8 @@
-import os
-from dotenv import load_dotenv
+BOT_TOKEN = "7731916113:AAGa1CZ47eEG1qz3gQOJvsR6_7ELvDJddZg"
+ADMIN_ID = 7231676236
+LOG_LEVEL = "INFO"
 
-load_dotenv()
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_IDS = list(map(int, os.getenv("ADMIN_IDS", "").split(",")))
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-
-# Outline VPN
-OUTLINE_API_URL = os.getenv("OUTLINE_API_URL")
-OUTLINE_CERT_SHA256 = os.getenv("OUTLINE_CERT_SHA256")
-
-VPN_IPV4 = os.getenv("VPN_IPV4")
-VPN_IPV6 = os.getenv("VPN_IPV6")
-
-# Тарифы (звёзды)
-PLAN_1_MONTH = int(os.getenv("PLAN_1_MONTH", 49))
-PLAN_2_MONTH = int(os.getenv("PLAN_2_MONTH", 89))
-PLAN_3_MONTH = int(os.getenv("PLAN_3_MONTH", 119))
-
-# Реферальная система
-REFERRAL_BONUS_PERCENT = int(os.getenv("REFERRAL_BONUS_PERCENT", 10))
-REFERRAL_MIN_PAYOUT = int(os.getenv("REFERRAL_MIN_PAYOUT", 100))
+# Серверные данные для VPN
+VPN_IPV4 = "5.129.197.99"
+VPN_ROOT_PASSWORD = "hP9CsxoHLUnq,3"
+VPN_CLIENTS_DIR = "/root/home_bot/clients"
