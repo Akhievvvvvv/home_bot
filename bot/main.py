@@ -1,130 +1,116 @@
-import asyncio
+# bot/main.py
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils import executor
-from bot.config.settings import BOT_TOKEN, ADMIN_IDS, PLAN_1_MONTH, PLAN_2_MONTH, PLAN_3_MONTH, VPN_IPV4, VPN_ROOT_PASSWORD, VPN_CLIENTS_DIR, REFERRAL_BONUS_PERCENT, REFERRAL_MIN_PAYOUT
-from bot.locales.ru import START_MESSAGE, BUTTONS, PAYMENT_MESSAGES, REFERRAL_MESSAGES, PROFILE_MESSAGES, CONFIG_MESSAGES
-
-import os
-import json
-from datetime import datetime, timedelta
+from bot.config.settings import BOT_TOKEN, ADMIN_IDS, PLAN_1_MONTH, PLAN_2_MONTH, PLAN_3_MONTH, VPN_CLIENTS_DIR
+from bot.locales.ru import START_MESSAGE, MAIN_MENU, PAYMENT_MESSAGES, BUTTONS, CONFIG_MESSAGES
+from bot.utils.vpn import generate_ovpn
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
-# Простая база пользователей (json)
-DB_FILE = "bot/users.json"
-
-def load_db():
-    if not os.path.exists(DB_FILE):
-        with open(DB_FILE, "w") as f:
-            json.dump({}, f)
-    with open(DB_FILE, "r") as f:
-        return json.load(f)
-
-def save_db(db):
-    with open(DB_FILE, "w") as f:
-        json.dump(db, f, indent=4)
-
-db = load_db()
-
-# Inline-кнопки главного меню
+# -------------------- Главное меню --------------------
 def main_menu_kb():
-    kb = InlineKeyboardMarkup(row_width=2)
-    kb.add(
-        InlineKeyboardButton(BUTTONS["buy_vpn"], callback_data="buy_vpn"),
-        InlineKeyboardButton(BUTTONS["my_profile"], callback_data="my_profile"),
-        InlineKeyboardButton(BUTTONS["my_config"], callback_data="my_config"),
-        InlineKeyboardButton(BUTTONS["referral"], callback_data="referral"),
-        InlineKeyboardButton(BUTTONS["help"], callback_data="help"),
-        InlineKeyboardButton(BUTTONS["support"], callback_data="support")
-    )
-    return kb
-
-# Inline-кнопки оплаты
-def payment_kb():
     kb = InlineKeyboardMarkup(row_width=1)
     kb.add(
-        InlineKeyboardButton(f"1 месяц — {PLAN_1_MONTH} ⭐", callback_data="plan_1"),
-        InlineKeyboardButton(f"2 месяца — {PLAN_2_MONTH} ⭐", callback_data="plan_2"),
-        InlineKeyboardButton(f"3 месяца — {PLAN_3_MONTH} ⭐", callback_data="plan_3")
+        InlineKeyboardButton(MAIN_MENU["buy_vpn"], callback_data="buy_vpn"),
+        InlineKeyboardButton(MAIN_MENU["my_profile"], callback_data="my_profile"),
+        InlineKeyboardButton(MAIN_MENU["my_config"], callback_data="my_config"),
+        InlineKeyboardButton(MAIN_MENU["referral"], callback_data="referral"),
+        InlineKeyboardButton(MAIN_MENU["help"], callback_data="help"),
+        InlineKeyboardButton(MAIN_MENU["support"], callback_data="support")
     )
     return kb
 
-# Inline кнопка "Оплатил(а)"
-def paid_button():
-    kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton(BUTTONS["paid"], callback_data="paid"))
-    return kb
-
-# Старт
 @dp.message_handler(commands=["start"])
 async def start_handler(message: types.Message):
-    user_id = str(message.from_user.id)
-    if user_id not in db:
-        db[user_id] = {
-            "username": message.from_user.full_name,
-            "subscription": None,
-            "referrals": [],
-            "earned": 0
-        }
-        save_db(db)
-    await message.answer(START_MESSAGE.format(username=message.from_user.full_name), reply_markup=main_menu_kb())
+    await message.answer(START_MESSAGE.format(username=message.from_user.username), reply_markup=main_menu_kb())
 
-# Обработка inline кнопок
-@dp.callback_query_handler(lambda c: True)
-async def inline_handler(callback: types.CallbackQuery):
-    user_id = str(callback.from_user.id)
-    data = callback.data
+# -------------------- Обработка кнопок --------------------
+@dp.callback_query_handler(lambda c: c.data == "buy_vpn")
+async def buy_vpn_handler(call: types.CallbackQuery):
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(
+        InlineKeyboardButton(f"1 месяц — {PLAN_1_MONTH} ⭐", callback_data="buy_1"),
+        InlineKeyboardButton(f"2 месяца — {PLAN_2_MONTH} ⭐", callback_data="buy_2"),
+        InlineKeyboardButton(f"3 месяца — {PLAN_3_MONTH} ⭐", callback_data="buy_3"),
+    )
+    await call.message.answer(PAYMENT_MESSAGES["choose_tariff"], reply_markup=kb)
 
-    if data == "buy_vpn":
-        await bot.send_message(user_id, PAYMENT_MESSAGES["choose_tariff"], reply_markup=payment_kb())
-    elif data.startswith("plan_"):
-        plan = int(data.split("_")[1])
-        db[user_id]["subscription_plan"] = plan
-        db[user_id]["subscription_active"] = False
-        save_db(db)
-        await bot.send_message(user_id, PAYMENT_MESSAGES["payment_instructions"], reply_markup=paid_button())
-    elif data == "paid":
-        # Проверка оплаты (эмуляция)
-        if user_id in db:
-            plan = db[user_id].get("subscription_plan", 1)
-            db[user_id]["subscription_active"] = True
-            db[user_id]["subscription_start"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-            db[user_id]["subscription_end"] = (datetime.now() + timedelta(days=30*plan)).strftime("%Y-%m-%d %H:%M")
-            save_db(db)
+@dp.callback_query_handler(lambda c: c.data.startswith("buy_"))
+async def handle_payment(call: types.CallbackQuery):
+    month_map = {"buy_1": PLAN_1_MONTH, "buy_2": PLAN_2_MONTH, "buy_3": PLAN_3_MONTH}
+    month = call.data.split("_")[1]
+    stars = month_map[call.data]
+    
+    # Кнопка "Оплатил(а)"
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(InlineKeyboardButton(BUTTONS["paid"], callback_data=f"paid_{month}"))
+    
+    await call.message.answer(
+        f"⭐ Вы выбрали тариф на {month} месяц(-ев) за {stars} ⭐\n\n"
+        f"{PAYMENT_MESSAGES['payment_instructions']}",
+        reply_markup=kb
+    )
 
-            # Создаём конфиг VPN (файл)
-            client_file = f"{VPN_CLIENTS_DIR}/{user_id}.ovpn"
-            os.makedirs(VPN_CLIENTS_DIR, exist_ok=True)
-            with open(client_file, "w") as f:
-                f.write(f"# Конфиг VPN для {user_id}\n")
+@dp.callback_query_handler(lambda c: c.data.startswith("paid_"))
+async def paid_handler(call: types.CallbackQuery):
+    month = call.data.split("_")[1]
+    user_id = call.from_user.id
+    
+    # Генерация VPN .ovpn
+    ovpn_file = generate_ovpn(str(user_id))
+    
+    await call.message.answer(
+        f"✅ Оплата подтверждена!\nВаш VPN готов.\n\n"
+        f"Файл конфигурации: {ovpn_file}\n\n"
+        f"Инструкция по подключению:\n"
+        f"1️⃣ Установите OpenVPN клиент.\n"
+        f"2️⃣ Импортируйте .ovpn файл.\n"
+        f"3️⃣ Подключитесь к VPN.\n"
+        f"🌐 Теперь вы онлайн безопасно и анонимно!"
+    )
 
-            await bot.send_message(user_id, PAYMENT_MESSAGES["payment_success"])
-            await bot.send_message(user_id, CONFIG_MESSAGES["vpn_info"].format(
-                ipv4=VPN_IPV4,
-                ipv6="",
-                root_password=VPN_ROOT_PASSWORD,
-                client_file=client_file
-            ))
-    elif data == "my_profile":
-        user = db.get(user_id, {})
-        subscription = user.get("subscription_plan")
-        active = user.get("subscription_active")
-        start = user.get("subscription_start", "-")
-        end = user.get("subscription_end", "-")
-        await bot.send_message(user_id, PROFILE_MESSAGES["subscription_info"].format(
-            plan=f"{subscription} месяц(ев)" if subscription else "-",
-            expiry_date=end if active else "Нет"
-        ) + "\n" + PROFILE_MESSAGES["referrals_info"].format(
-            invited=len(user.get("referrals", [])),
-            paid=sum([1 for r in user.get("referrals", []) if r.get("paid")])
-        ))
-    elif data == "referral":
-        user = db.get(user_id, {})
-        await bot.send_message(user_id, REFERRAL_MESSAGES["referral_info"].format(
-            percent=REFERRAL_BONUS_PERCENT,
-            min_payout=REFERRAL_MIN_PAYOUT,
-            user_id=user_id
-        ))
-    await callback.answer()
+# -------------------- Мой профиль --------------------
+@dp.callback_query_handler(lambda c: c.data == "my_profile")
+async def profile_handler(call: types.CallbackQuery):
+    # Здесь должна быть интеграция с базой данных
+    # Для примера покажем статическую информацию
+    await call.message.answer(
+        f"👤 Профиль пользователя {call.from_user.username}\n"
+        f"Подписка: 1 месяц\n"
+        f"Дата окончания: 01.10.2025\n"
+        f"Рефералы: 5\n"
+        f"Оплачено рефералами: 2\n"
+    )
+
+# -------------------- Моя конфигурация --------------------
+@dp.callback_query_handler(lambda c: c.data == "my_config")
+async def config_handler(call: types.CallbackQuery):
+    user_id = call.from_user.id
+    # Генерация VPN конфигурации
+    ovpn_file = generate_ovpn(str(user_id))
+    await call.message.answer(
+        CONFIG_MESSAGES["vpn_info"].format(
+            ipv4="5.129.197.99",
+            ipv6="2a03:6f00:a::cbe1",
+            root_password="hP9CsxoHLUnq,3"
+        ) + f"\nФайл .ovpn: {ovpn_file}"
+    )
+
+# -------------------- Реферальная программа --------------------
+@dp.callback_query_handler(lambda c: c.data == "referral")
+async def referral_handler(call: types.CallbackQuery):
+    referral_link = f"https://t.me/home_vpn_bot_bot?start={call.from_user.id}"
+    await call.message.answer(
+        f"🎁 Реферальная система\n\n"
+        f"Пригласите друзей и получите {REFERRAL_BONUS_PERCENT}% от их оплаты ⭐.\n"
+        f"Минимальная выплата: {REFERRAL_MIN_PAYOUT} ⭐\n"
+        f"Ваша личная ссылка для приглашений:\n{referral_link}"
+    )
+
+# -------------------- Запуск бота --------------------
+if __name__ == "__main__":
+    from aiogram import executor
+    executor.start_polling(dp, skip_updates=True)
