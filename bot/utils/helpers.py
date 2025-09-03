@@ -16,16 +16,19 @@ def format_price_stars(stars: int) -> str:
     """Возвращает цену в звёздах с красивым оформлением."""
     return f"{stars} ⭐"
 
-def format_date(timestamp: int) -> str:
-    """Преобразует Unix timestamp в читаемую дату."""
-    return datetime.fromtimestamp(timestamp).strftime("%d.%m.%Y %H:%M")
+def format_date(dt: datetime) -> str:
+    """Преобразует datetime в читаемую дату."""
+    return dt.strftime("%d.%m.%Y %H:%M")
 
 # =========================
 # ПРОВЕРКА ЮЗЕРНЕЙМА
 # =========================
 def validate_username(username: str) -> bool:
-    """Простейшая валидация username Telegram."""
-    return username.isalnum() and 5 <= len(username) <= 32
+    """Валидация username Telegram (буквы, цифры, _)."""
+    if not username:
+        return False
+    allowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    return all(c in allowed_chars for c in username) and 5 <= len(username) <= 32
 
 # =========================
 # ПОДСЧЁТ ОКОНЧАНИЯ ПОДПИСКИ
@@ -35,7 +38,7 @@ def calculate_subscription_end(start_date: datetime, months: int) -> datetime:
     return start_date + timedelta(days=30 * months)
 
 # =========================
-# ПОЛУЧЕНИЕ СТОИМОСТИ ПО ТАРИФУ
+# СТОИМОСТЬ ТАРИФА
 # =========================
 def get_tariff_price(tariff_name: str) -> int:
     """Возвращает стоимость тарифа в звёздах."""
