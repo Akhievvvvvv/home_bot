@@ -1,6 +1,6 @@
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from bot.locales.ru import PAYMENT_MESSAGES, BUTTONS
+from bot.locales.ru import PAYMENT_MESSAGES
 from bot.utils.vpn import generate_ovpn
 
 
@@ -23,27 +23,24 @@ async def handle_buy(call: types.CallbackQuery):
 
 
 # --- Оплата подтверждена ---
-async def handle_payment(call: types.CallbackQuery, month: int):
+async def handle_payment(call: types.CallbackQuery):
     user_id = str(call.from_user.id)
+
+    # Из callback_data достаём срок (1 / 2 / 3)
+    month = call.data.split("_")[1]
 
     # Генерация .ovpn файла
     ovpn_path = generate_ovpn(user_id)
 
-    # Кнопка "Оплатил(а)" (если нужна доп. проверка)
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=BUTTONS["paid"], callback_data=f"paid_{month}")]
-    ])
-
-    # Отправляем сообщение
+    # Сообщение с инструкцией
     await call.message.answer(
         f"✅ Оплата подтверждена!\n\n"
-        f"Ваш VPN готов.\n\n"
+        f"Ваш VPN готов на {month} мес.\n\n"
         f"Инструкция по подключению:\n"
         f"1️⃣ Установите OpenVPN клиент (например, OpenVPN Connect).\n"
         f"2️⃣ Импортируйте .ovpn файл.\n"
         f"3️⃣ Подключитесь к VPN.\n\n"
-        f"🌐 Теперь вы онлайн безопасно и анонимно!",
-        reply_markup=kb
+        f"🌐 Теперь вы онлайн безопасно и анонимно!"
     )
 
     # Отправляем сам .ovpn файл
