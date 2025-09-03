@@ -46,7 +46,7 @@ async def list_users(message: types.Message):
     text = "<b>Список пользователей:</b>\n"
     for u in users:
         username = f"@{u.username}" if u.username else "—"
-        text += f"ID: {u.id} | Username: {username} | Stars: {u.stars}\n"
+        text += f"ID: {u.id} | Telegram ID: {u.telegram_id} | Username: {username}\n"
 
     await message.answer(text[:4096], parse_mode="HTML")
 
@@ -65,7 +65,10 @@ async def list_subscriptions(message: types.Message):
 
     text = "<b>Список подписок:</b>\n"
     for s in subs:
-        text += f"User ID: {s.user_id} | Тариф: {s.plan_months} мес | Статус: {s.status}\n"
+        text += (
+            f"User ID: {s.user_id} | Тариф: {s.plan_months} мес | "
+            f"Оплачено: {s.paid_stars} ⭐ | До: {s.end_date}\n"
+        )
 
     await message.answer(text[:4096], parse_mode="HTML")
 
@@ -84,7 +87,7 @@ async def list_keys(message: types.Message):
 
     text = "<b>Список VPN ключей:</b>\n"
     for k in keys:
-        text += f"Ключ: {k.key} | Пользователь ID: {k.user_id} | Активен: {k.active}\n"
+        text += f"Ключ: {k.key} | Пользователь ID: {k.user_id} | Действует до: {k.expires_at}\n"
 
     await message.answer(text[:4096], parse_mode="HTML")
 
@@ -109,7 +112,7 @@ async def broadcast_send(message: types.Message, state: FSMContext):
     sent = 0
     for u in users:
         try:
-            await message.bot.send_message(u.id, message.text)
+            await message.bot.send_message(u.telegram_id, message.text)
             sent += 1
         except Exception:
             continue
