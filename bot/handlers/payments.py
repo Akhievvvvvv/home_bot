@@ -1,6 +1,6 @@
 from aiogram import Router, types, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from bot.locales.ru import PAYMENT_MESSAGES, BUTTONS
+from bot.locales.ru import PAYMENT_MESSAGES
 from bot.utils.vpn import generate_ovpn
 
 router = Router()
@@ -13,20 +13,22 @@ def create_tariff_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="3 месяца — 149 ⭐", callback_data="buy_3")]
     ])
 
-# --- Команда /buy или нажатие кнопки "Купить VPN" ---
+
+# --- Команда /buy или кнопка "Купить VPN" ---
 @router.message(F.text.in_({"🛒 Купить VPN", "/buy"}))
 async def handle_buy(message: types.Message):
     kb = create_tariff_kb()
     await message.answer(PAYMENT_MESSAGES["choose_tariff"], reply_markup=kb)
 
-# --- Обработка выбора тарифа (callback) ---
+
+# --- Обработка выбора тарифа ---
 @router.callback_query(F.data.in_({"buy_1", "buy_2", "buy_3"}))
 async def handle_payment(call: types.CallbackQuery):
-    # Определяем месяц по callback
+    # Определяем срок подписки
     month = int(call.data.split("_")[1])
     user_id = str(call.from_user.id)
 
-    # Генерируем .ovpn
+    # Генерация .ovpn файла
     try:
         ovpn_path = generate_ovpn(user_id)
     except Exception as e:
@@ -34,28 +36,23 @@ async def handle_payment(call: types.CallbackQuery):
         await call.answer()
         return
 
-    # Кнопка "Оплатил(а)" на случай проверки
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=BUTTONS["paid"], callback_data=f"paid_{month}")]
-    ])
-
-    # Отправляем инструкцию
+    # Инструкция пользователю
     await call.message.answer(
         f"✅ Оплата подтверждена!\n\n"
-        f"Ваш VPN готов.\n\n"
-        f"Инструкция по подключению:\n"
-        f"1️⃣ Установите OpenVPN клиент (например, OpenVPN Connect).\n"
-        f"2️⃣ Импортируйте .ovpn файл.\n"
+        f"Ваш VPN активирован на <b>{month} мес.</b>\n\n"
+        f"📖 Инструкция по подключению:\n"
+        f"1️⃣ Установите <b>OpenVPN Connect</b> (или другой клиент).\n"
+        f"2️⃣ Импортируйте присланный .ovpn файл.\n"
         f"3️⃣ Подключитесь к VPN.\n\n"
-        f"🌐 Теперь вы онлайн безопасно и анонимно!",
-        reply_markup=kb
+        f"🌍 Теперь вы в сети <b>безопасно и анонимно</b> 🔒",
+        parse_mode="HTML"
     )
 
-    # Отправляем сам .ovpn файл
+    # Отправка файла
     try:
         with open(ovpn_path, "rb") as f:
-            await call.message.answer_document(f, caption="📎 Ваш .ovpn файл")
+            await call.message.answer_document(f, caption="📎 Ваш персональный .ovpn файл")
     except Exception as e:
         await call.message.answer(f"❌ Ошибка отправки файла: {e}")
 
-    await call.answer()  # закрываем "часики" у callback
+    await call.answer()  # закрываем "часики"
