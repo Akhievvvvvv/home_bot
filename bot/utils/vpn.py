@@ -1,4 +1,4 @@
-# bot/utils/cleanup.py
+# bot/utils/vpn.py
 
 import os
 import datetime
