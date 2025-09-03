@@ -16,7 +16,7 @@ from bot.utils.vpn import generate_ovpn
 from bot.handlers import payments, admin
 
 
-# -------------------- Базовая настройка --------------------
+# -------------------- Логирование --------------------
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
@@ -35,6 +35,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
     ])
 
 
+# -------------------- /start --------------------
 @dp.message(CommandStart())
 async def start_handler(message: types.Message):
     await message.answer(
@@ -43,7 +44,7 @@ async def start_handler(message: types.Message):
     )
 
 
-# -------------------- Обработка кнопок --------------------
+# -------------------- Покупка VPN --------------------
 @dp.callback_query(F.data == "buy_vpn")
 async def buy_vpn_handler(call: types.CallbackQuery):
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -126,10 +127,11 @@ async def config_handler(call: types.CallbackQuery):
     await call.answer()
 
 
-# -------------------- Рефералка --------------------
+# -------------------- Реферальная система --------------------
 @dp.callback_query(F.data == "referral")
 async def referral_handler(call: types.CallbackQuery):
-    referral_link = f"https://t.me/{(await bot.me()).username}?start={call.from_user.id}"
+    bot_info = await bot.me()
+    referral_link = f"https://t.me/{bot_info.username}?start={call.from_user.id}"
     await call.message.answer(
         f"🎁 Реферальная система\n\n"
         f"Приглашайте друзей и получайте {REFERRAL_BONUS_PERCENT}% от их оплаты ⭐.\n"
@@ -152,13 +154,13 @@ async def support_handler(call: types.CallbackQuery):
     await call.answer()
 
 
-# -------------------- Подключение хэндлеров --------------------
+# -------------------- Регистрация дополнительных хэндлеров --------------------
 def register_all_handlers():
     payments.register_handlers(dp)
     admin.register_handlers(dp)
 
 
-# -------------------- Запуск --------------------
+# -------------------- Запуск бота --------------------
 async def main():
     register_all_handlers()
     await dp.start_polling(bot)
