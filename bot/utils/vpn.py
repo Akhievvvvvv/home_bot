@@ -1,33 +1,36 @@
-import subprocess
+# bot/utils/cleanup.py
+
 import os
+import datetime
 from bot.config.settings import VPN_CLIENTS_DIR
+from bot.models.database import SessionLocal, VPNKey
 
-def generate_ovpn(client_name: str) -> str:
+def cleanup_expired_vpn_keys():
     """
-    Генерирует .ovpn файл для клиента.
-    Если файл уже существует, возвращает его путь.
+    Удаляет все VPN ключи и файлы, у которых истёк срок действия.
     """
-    # Путь к файлу клиента
-    client_file = os.path.join(VPN_CLIENTS_DIR, f"{client_name}.ovpn")
+    now = datetime.datetime.utcnow()
+    deleted_keys = 0
+    deleted_files = 0
 
-    # Создаём папку для клиентов, если её нет
-    os.makedirs(VPN_CLIENTS_DIR, exist_ok=True)
+    with SessionLocal() as db:
+        expired_keys = db.query(VPNKey).filter(VPNKey.expires_at != None, VPNKey.expires_at < now).all()
 
-    # Если файл уже существует, возвращаем его путь
-    if os.path.exists(client_file):
-        return client_file
+        for key in expired_keys:
+            # Удаляем файл .ovpn
+            file_path = os.path.join(VPN_CLIENTS_DIR, f"{key.key}.ovpn")
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    deleted_files += 1
+                except Exception as e:
+                    print(f"Ошибка удаления файла {file_path}: {e}")
 
-    # Запуск скрипта генерации клиента
-    command = f"sudo ./openvpn-install.sh --client {client_name}"
-    result = subprocess.run(command, shell=True, capture_output=True)
-    if result.returncode != 0:
-        raise Exception(f"Ошибка генерации клиента:\n{result.stderr.decode()}")
+            # Удаляем запись из базы
+            db.delete(key)
+            deleted_keys += 1
 
-    # Скрипт создаёт файл в /root, перемещаем его в папку клиентов
-    default_ovpn = f"/root/{client_name}.ovpn"
-    if os.path.exists(default_ovpn):
-        os.rename(default_ovpn, client_file)
-    else:
-        raise Exception("Файл .ovpn не найден после генерации!")
+        db.commit()
 
-    return client_file
+    print(f"Очистка завершена: удалено {deleted_keys} ключей и {deleted_files} файлов")
+    return deleted_keys, deleted_files
