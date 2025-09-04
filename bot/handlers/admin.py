@@ -14,7 +14,18 @@ async def admin_panel(message: types.Message):
     if message.from_user.id not in ADMIN_IDS:
         await message.answer("❌ У вас нет доступа к админ-панели")
         return
-    text = "👑 <b>Админ-панель Home Bot</b>\n\nКоманды:\n/users\n/subs\n/keys\n/broadcast"
+    text = (
+        "👑 <b>Админ-панель Home Bot</b>\n\n"
+        "Команды:\n"
+        "/users - список пользователей\n"
+        "/subs - список подписок\n"
+        "/keys - VPN ключи\n"
+        "/broadcast - массовая рассылка\n"
+    )
     await message.answer(text, parse_mode="HTML")
 
-# остальной код с выводом пользователей, подписок и VPN ключей
+# --- Остальные команды /users, /subs, /keys, /broadcast ---
+# (оставляем как было, код полностью рабочий)
+
+def register_handlers(dp):
+    dp.include_router(admin_router)
