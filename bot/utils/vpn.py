@@ -1,13 +1,10 @@
 import os
-from bot.config.settings import VPN_CLIENTS_DIR
-from bot.models.database import SessionLocal, VPNKey
 import datetime
 import subprocess
+from bot.config.settings import VPN_CLIENTS_DIR
+from bot.models.database import SessionLocal, VPNKey
 
 def generate_ovpn(client_name: str) -> str:
-    """
-    Генерация .ovpn файла для клиента.
-    """
     client_file = os.path.join(VPN_CLIENTS_DIR, f"{client_name}.ovpn")
     os.makedirs(VPN_CLIENTS_DIR, exist_ok=True)
     if os.path.exists(client_file):
