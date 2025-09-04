@@ -4,7 +4,6 @@ from sqlalchemy.orm import sessionmaker, relationship
 import datetime
 
 DATABASE_URL = "sqlite:///vpn_bot.db"
-
 engine = create_engine(DATABASE_URL, echo=False, future=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -14,6 +13,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     telegram_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String, nullable=True)
+    referral_code = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
     vpn_keys = relationship("VPNKey", back_populates="user", cascade="all, delete-orphan")
